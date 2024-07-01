@@ -35,7 +35,6 @@ data "aws_iam_policy_document" "lambda_execution_role" {
       "arn:aws:logs:ap-northeast-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/fannaly-${var.env}:*"
     ]
   }
-
 }
 
 data "aws_iam_policy_document" "lambda_assume_role" {
@@ -52,5 +51,22 @@ data "aws_iam_policy_document" "lambda_assume_role" {
 # IAM for API Gateway
 
 # AWS Lambda
+
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_dir  = "api"
+  output_path = "api.zip"
+}
+
+
+resource "aws_lambda_function" "api" {
+  depends_on       = [aws_iam_role.lambda_role]
+  filename         = data.archive_file.lambda_zip.output_path
+  function_name    = "fannaly-${var.env}-api"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "index.lambda_handler"
+  runtime          = "nodejs18.x"
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+}
 
 # Amazon API Gateway
